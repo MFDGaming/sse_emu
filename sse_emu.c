@@ -288,7 +288,17 @@ static void sse2_subsd_op(double *dest, double *src) {
 
 static void sse2_ucomisd_op(double *dest, double *src, unsigned int *eflags) {
     unsigned int cf = 0, pf = 0, zf = 0;
-    if (dest[0] != dest[0] || src[0] != src[0]) {
+    unsigned int exp_dest = (((unsigned int *)&dest)[1] >> 20) & 0x7FF;
+    unsigned int exp_src = (((unsigned int *)&src)[1] >> 20) & 0x7FF;
+    unsigned int frac_hi_dest = ((unsigned int *)&dest)[1] & 0xfffff;
+    unsigned int frac_hi_src = ((unsigned int *)&src)[1] & 0xfffff;
+    unsigned int frac_lo_dest = ((unsigned int *)&dest)[0];
+    unsigned int frac_lo_src = ((unsigned int *)&src)[0];
+
+    if (
+        (exp_dest == 0x7FF && (frac_hi_dest != 0 || frac_lo_dest != 0)) ||
+        (exp_src == 0x7FF && (frac_hi_src != 0 || frac_lo_src != 0))
+    ) {
         cf = 0x0001;
         pf = 0x0004;
         zf = 0x0040;
@@ -564,3 +574,4 @@ void sse3_install_handler() {
     sigaction(SIGILL, &act, &old_act);
 }
 #endif
+
